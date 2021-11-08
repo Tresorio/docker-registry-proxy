@@ -22,7 +22,10 @@ type credentials struct {
 }
 
 func (c credentials) Basic(u *url.URL) (string, string) {
-	up := c.creds[u.String()]
+	up, ok := c.creds[u.String()]
+	if !ok {
+		up = c.creds[""]
+	}
 
 	return up.username, up.password
 }
@@ -64,6 +67,9 @@ func getAuthURLs(remoteURL string) ([]string, error) {
 	defer resp.Body.Close()
 
 	for _, c := range challenge.ResponseChallenges(resp) {
+		if strings.EqualFold(c.Scheme, "basic") {
+			authURLs = append(authURLs, "")
+		}
 		if strings.EqualFold(c.Scheme, "bearer") {
 			authURLs = append(authURLs, c.Parameters["realm"])
 		}

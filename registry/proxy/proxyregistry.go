@@ -121,9 +121,11 @@ func (pr *proxyingRegistry) Repositories(ctx context.Context, repos []string, la
 func (pr *proxyingRegistry) Repository(ctx context.Context, name reference.Named) (distribution.Repository, error) {
 	c := pr.authChallenger
 
+	cs := c.credentialStore()
+
 	tkopts := auth.TokenHandlerOptions{
 		Transport:   http.DefaultTransport,
-		Credentials: c.credentialStore(),
+		Credentials: cs,
 		Scopes: []auth.Scope{
 			auth.RepositoryScope{
 				Repository: name.Name(),
@@ -135,7 +137,9 @@ func (pr *proxyingRegistry) Repository(ctx context.Context, name reference.Named
 
 	tr := transport.NewTransport(http.DefaultTransport,
 		auth.NewAuthorizer(c.challengeManager(),
-			auth.NewTokenHandlerWithOptions(tkopts)))
+			auth.NewTokenHandlerWithOptions(tkopts),
+			auth.NewBasicHandler(cs)))
+
 
 	localRepo, err := pr.embedded.Repository(ctx, name)
 	if err != nil {
